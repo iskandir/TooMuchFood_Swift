@@ -10,13 +10,26 @@ import SpriteKit
 import GameplayKit
 
 class GameScene: SKScene {
+    //physics categories
+    struct PhysicsCategory {
+        static let none : UInt32 = 0
+        static let all : UInt32 = UInt32.max
+        static let poo : UInt32 = 0b1
+        static let player : UInt32 = 0b10
+        static let burger : UInt32 = 0b100
+        static let fries : UInt32 = 0b101
+    }
+    
     var entities = [GKEntity]()
     var graphs = [String : GKGraph]()
     
     private var lastUpdateTime : TimeInterval = 0
     private var label : SKLabelNode?
     private var spinnyNode : SKShapeNode?
-    private var player = SKSpriteNode(imageNamed: "down")
+    private var player = SKSpriteNode(imageNamed: "right")
+    
+    private var foodCounter = 0
+    private var pooCounter = 1
     
     override func sceneDidLoad() {
         self.lastUpdateTime = 0
@@ -41,92 +54,95 @@ class GameScene: SKScene {
                                               SKAction.removeFromParent()]))
         }
         
-        
-
     }
-    
     override func didMove(to view: SKView) {
-        player.position = CGPoint(x: size.width * 0.1, y: size.height * 0.1)
-        backgroundColor = SKColor.white
-        addChild(player)
-        addPoo()
+        //Background image
+        let background = SKSpriteNode(imageNamed: "background")
+        background.position = CGPoint(x: size.width/2, y: size.height/2)
+        addChild(background)
+        background.scale(to: CGSize(width: 500, height: 600))
         
+        player.position = CGPoint(x: size.width * 0.1, y: size.height * 0.1)
+        addChild(player)
+        player.scale(to: CGSize(width: 100, height: 100))
+        //world has no gravity
+        physicsWorld.gravity = .zero
+        //notification when two physics bodies collide
+        physicsWorld.contactDelegate = self
+        
+        //run addPoo func to create poos
         run(SKAction.repeatForever(
           SKAction.sequence([
             SKAction.run(addPoo),
             SKAction.wait(forDuration: 1.0)
             ])
         ))
+        
+        //background music
+        /*
+         let backgroundMusic = SKAudioNode(fileNamed: "background-music-aac.caf")
+         backgroundMusic.autoplayLooped = true
+         addChild(backgroundMusic)
+         */
     }
+    
     func random() -> CGFloat {
       return CGFloat(Float(arc4random()) / 0xFFFFFFFF)
     }
-
     func random(min: CGFloat, max: CGFloat) -> CGFloat {
       return random() * (max - min) + min
     }
-    
     func addPoo() {
         let poo = SKSpriteNode(imageNamed: "poo")
+        poo.scale(to: CGSize(width: 60,height: 60))
+        
+        poo.physicsBody = SKPhysicsBody(rectangleOf: poo.size)
+               poo.physicsBody?.isDynamic = true
+               poo.physicsBody?.categoryBitMask = PhysicsCategory.poo
+               poo.physicsBody?.contactTestBitMask = PhysicsCategory.player
+               poo.physicsBody?.collisionBitMask = PhysicsCategory.none
         
         // Determine where to spawn the monster along the Y axis
         let actualY = random(min: poo.size.height/2, max: size.height - poo.size.height/2)
         
         // Position the monster slightly off-screen along the right edge,
         // and along a random position along the Y axis as calculated above
-        poo.position = CGPoint(x: size.width - poo.size.width/2, y: actualY)
+        poo.position = CGPoint(x: size.width + poo.size.width/2, y: actualY)
         
         // Add the monster to the scene
         addChild(poo)
+        let actualDuration = random(min: CGFloat(2.0), max: CGFloat(4.0))
         
-        print("create poo")
-    }
-    
-    func touchDown(atPoint pos : CGPoint) {
-        if let n = self.spinnyNode?.copy() as! SKShapeNode? {
-            n.position = pos
-            n.strokeColor = SKColor.green
-            self.addChild(n)
-        }
-    }
-    
-    func touchMoved(toPoint pos : CGPoint) {
-        if let n = self.spinnyNode?.copy() as! SKShapeNode? {
-            n.position = pos
-            n.strokeColor = SKColor.blue
-            self.addChild(n)
-        }
-    }
-    
-    func touchUp(atPoint pos : CGPoint) {
-        if let n = self.spinnyNode?.copy() as! SKShapeNode? {
-            n.position = pos
-            n.strokeColor = SKColor.red
-            self.addChild(n)
-        }
-    }
-    
-    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        if let label = self.label {
-            label.run(SKAction.init(named: "Pulse")!, withKey: "fadeInOut")
-        }
+        // Create the actions
+        let actionMove = SKAction.move(to: CGPoint(x: -poo.size.width/2, y: actualY),
+                                       duration: TimeInterval(actualDuration))
+        let actionMoveDone = SKAction.removeFromParent()
+//        gameoverscreen!!!
+//        let loseAction = SKAction.run() { [weak self] in
+//          guard let `self` = self else { return }
+//          let reveal = SKTransition.flipHorizontal(withDuration: 0.5)
+//          let gameOverScene = GameOverScene(size: self.size, won: false)
+//          self.view?.presentScene(gameOverScene, transition: reveal)
+//        }
+        poo.run(SKAction.sequence([actionMove, actionMoveDone]))
         
-        for t in touches { self.touchDown(atPoint: t.location(in: self)) }
     }
-    
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-        for t in touches { self.touchMoved(toPoint: t.location(in: self)) }
+        for touch in touches {
+            let location = touch.location(in: self)
+            player.position.x = location.x
+            player.position.y = location.y
+        }
     }
-    
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        for t in touches { self.touchUp(atPoint: t.location(in: self)) }
+        player.physicsBody = SKPhysicsBody(circleOfRadius: player.size.width/2)
+        player.physicsBody?.isDynamic = true
+        player.physicsBody?.categoryBitMask = PhysicsCategory.player
+        player.physicsBody?.contactTestBitMask = PhysicsCategory.poo
+        player.physicsBody?.collisionBitMask = PhysicsCategory.none
+        player.physicsBody?.usesPreciseCollisionDetection = true
     }
-    
-    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
-        for t in touches { self.touchUp(atPoint: t.location(in: self)) }
-    }
-    
-    
+     
     override func update(_ currentTime: TimeInterval) {
         // Called before each frame is rendered
         
@@ -145,4 +161,33 @@ class GameScene: SKScene {
         
         self.lastUpdateTime = currentTime
     }
+    
+    func playerDidCollideWithPoo(player: SKSpriteNode, poo: SKSpriteNode){
+        print("Poo Counter \(pooCounter)")
+        pooCounter+=1
+    }
+}
+
+extension GameScene : SKPhysicsContactDelegate {
+    func didBegin(_ contact: SKPhysicsContact) {
+        var firstBody: SKPhysicsBody
+        var secondBody: SKPhysicsBody
+        
+        if contact.bodyA.categoryBitMask < contact.bodyB.categoryBitMask {
+            firstBody = contact.bodyA
+            secondBody = contact.bodyB
+        } else {
+            firstBody = contact.bodyB
+            secondBody = contact.bodyA
+        }
+        
+        if ((firstBody.categoryBitMask & PhysicsCategory.poo != 0) && (secondBody.categoryBitMask & PhysicsCategory.player != 0)) {
+            if let poo = firstBody.node as? SKSpriteNode, let player = secondBody.node as? SKSpriteNode {
+                playerDidCollideWithPoo(player: player, poo: poo)
+            }
+        }
+        
+    }
+    
+    
 }

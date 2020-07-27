@@ -32,12 +32,18 @@ class GameViewController: UIViewController {
                 // Present the scene
                 if let view = self.view as! SKView? {
                     view.presentScene(sceneNode)
-                    
                     view.ignoresSiblingOrder = true
-                    
                     view.showsFPS = true
                     view.showsNodeCount = true
                 }
+                
+                let scene = GameScene(size: view.bounds.size)
+                      let skView = view as! SKView
+                      skView.showsFPS = true
+                      skView.showsNodeCount = true
+                      skView.ignoresSiblingOrder = true
+                      scene.scaleMode = .resizeFill
+                      skView.presentScene(scene)
                 
             }
         }
