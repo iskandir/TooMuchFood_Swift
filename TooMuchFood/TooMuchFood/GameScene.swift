@@ -60,8 +60,10 @@ class GameScene: SKScene {
         let background = SKSpriteNode(imageNamed: "background")
         background.position = CGPoint(x: size.width/2, y: size.height/2)
         addChild(background)
-        background.scale(to: CGSize(width: 500, height: 600))
+        //SKALIEREN DES HINTERGRUNDS!!
+        background.scale(to: SKSceneScaleMode.fill)
         
+        //Player creation and physics
         player.position = CGPoint(x: size.width * 0.1, y: size.height * 0.1)
         addChild(player)
         player.scale(to: CGSize(width: 100, height: 100))
