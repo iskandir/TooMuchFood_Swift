@@ -8,28 +8,29 @@
 
 import SpriteKit
 import GameplayKit
+import CoreGraphics
 
 class GameScene: SKScene {
-    //physics categories
-    struct PhysicsCategory {
-        static let none : UInt32 = 0
-        static let all : UInt32 = UInt32.max
-        static let poo : UInt32 = 0b1
-        static let player : UInt32 = 0b10
-        static let burger : UInt32 = 0b100
-        static let fries : UInt32 = 0b101
-    }
-    
+    private let background = SKSpriteNode(imageNamed: "background")
     var entities = [GKEntity]()
     var graphs = [String : GKGraph]()
-    
     private var lastUpdateTime : TimeInterval = 0
     private var label : SKLabelNode?
     private var spinnyNode : SKShapeNode?
     private var player = SKSpriteNode(imageNamed: "right")
+    private var foodCounter : Int = 1
+    private var pooCounter :Int = 0
+    let scoreLabel = SKLabelNode(fontNamed: "CoolFont")
     
-    private var foodCounter = 0
-    private var pooCounter = 1
+    //physics categories
+    struct PhysicsCategory {
+           static let none : UInt32 = 0
+           static let all : UInt32 = UInt32.max
+           static let poo : UInt32 = 0b1
+           static let player : UInt32 = 0b10
+           static let burger : UInt32 = 0b100
+           static let fries : UInt32 = 0b101
+    }
     
     override func sceneDidLoad() {
         self.lastUpdateTime = 0
@@ -56,21 +57,29 @@ class GameScene: SKScene {
         
     }
     override func didMove(to view: SKView) {
-        //Background image
-        let background = SKSpriteNode(imageNamed: "background")
+        //Background image and scaling
         background.position = CGPoint(x: size.width/2, y: size.height/2)
         addChild(background)
-        //SKALIEREN DES HINTERGRUNDS!!
-        background.scale(to: SKSceneScaleMode.fill)
-        
+        background.zPosition = 0
+        background.position = CGPoint(x: frame.size.width / 2, y: frame.size.height / 2)
+        self.background.size = CGSize(width: self.size.width, height: self.size.height)
         //Player creation and physics
         player.position = CGPoint(x: size.width * 0.1, y: size.height * 0.1)
         addChild(player)
         player.scale(to: CGSize(width: 100, height: 100))
+        player.zPosition = 1
         //world has no gravity
         physicsWorld.gravity = .zero
         //notification when two physics bodies collide
         physicsWorld.contactDelegate = self
+        
+        scoreLabel.text = "Highscore:  \(pooCounter)"
+        scoreLabel.fontSize = 30
+        scoreLabel.fontColor = SKColor.white
+        scoreLabel.position = CGPoint(x: size.width/2, y: size.height / 1.1)
+        scoreLabel.zPosition = 2
+        scoreLabel.horizontalAlignmentMode = .center
+        addChild(scoreLabel)
         
         //run addPoo func to create poos
         run(SKAction.repeatForever(
@@ -113,6 +122,7 @@ class GameScene: SKScene {
         
         // Add the monster to the scene
         addChild(poo)
+        poo.zPosition = 1
         let actualDuration = random(min: CGFloat(2.0), max: CGFloat(4.0))
         
         // Create the actions
@@ -129,6 +139,7 @@ class GameScene: SKScene {
         poo.run(SKAction.sequence([actionMove, actionMoveDone]))
         
     }
+    func addFood(){}
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
         for touch in touches {
             let location = touch.location(in: self)
@@ -144,10 +155,7 @@ class GameScene: SKScene {
         player.physicsBody?.collisionBitMask = PhysicsCategory.none
         player.physicsBody?.usesPreciseCollisionDetection = true
     }
-     
     override func update(_ currentTime: TimeInterval) {
-        // Called before each frame is rendered
-        
         // Initialize _lastUpdateTime if it has not already been
         if (self.lastUpdateTime == 0) {
             self.lastUpdateTime = currentTime
@@ -163,10 +171,16 @@ class GameScene: SKScene {
         
         self.lastUpdateTime = currentTime
     }
-    
+    //Spieler vs POO
     func playerDidCollideWithPoo(player: SKSpriteNode, poo: SKSpriteNode){
         print("Poo Counter \(pooCounter)")
-        pooCounter+=1
+        self.pooCounter-=1
+        scoreLabel.text = "Highscore is: \(pooCounter)"
+    }
+    //Spieler vs FOOD
+    func playerDidCollideWithFood(player: SKSpriteNode, food: SKSpriteNode){
+        print("Food Counter \(foodCounter)")
+        foodCounter+=1
     }
 }
 
