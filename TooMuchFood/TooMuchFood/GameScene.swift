@@ -18,8 +18,8 @@ class GameScene: SKScene {
     private var label : SKLabelNode?
     private var spinnyNode : SKShapeNode?
     private var player = SKSpriteNode(imageNamed: "right")
-    private var foodCounter : Int = 0
-    private var pooCounter :Int = 0
+    private var foodCounter : Int = 1
+    private var pooCounter :Int = 1
     private var highscore : Int = 0
     let scoreLabel = SKLabelNode(fontNamed: "CoolFont")
     
@@ -113,6 +113,7 @@ class GameScene: SKScene {
     }
     func addPoo() {
         let poo = SKSpriteNode(imageNamed: "poo")
+        poo.name = "poo"
         poo.scale(to: CGSize(width: 40,height: 40))
         poo.physicsBody = SKPhysicsBody(rectangleOf: poo.size)
         poo.physicsBody?.isDynamic = true
@@ -148,6 +149,9 @@ class GameScene: SKScene {
     func addFries()
     {
         let fries = SKSpriteNode(imageNamed: "fries")
+        
+        //for better information add a name
+        fries.name = "fries"
         fries.scale(to: CGSize(width: 40,height: 40))
         fries.physicsBody = SKPhysicsBody(rectangleOf: fries.size)
         fries.physicsBody?.isDynamic = true
@@ -195,26 +199,35 @@ class GameScene: SKScene {
     }
     //Spieler vs POO
     func playerDidCollideWithPoo(player: SKSpriteNode, poo: SKSpriteNode){
-        print("Poo Counter \(pooCounter)")
-        self.pooCounter-=1
-        self.highscore-=1
-        scoreLabel.text = "Highscore is: \(highscore)"
+        if poo.name == "poo"
+        {
+            print("pooooooo!")
+            print("Poo Counter \(pooCounter)")
+            self.pooCounter-=1
+            self.highscore-=1
+            scoreLabel.text = "Highscore is: \(highscore)"
+            poo.removeFromParent()
+        }
     }
     //Spieler vs FOOD
     func playerDidCollideWithFood(player: SKSpriteNode, fries: SKSpriteNode){
-        print("Food Counter \(foodCounter)")
-        self.foodCounter+=1
-        self.highscore+=1
-        fries.removeFromParent()
-        scoreLabel.text = "Highscore is: \(highscore)"
+        if fries.name == "fries"
+        {
+            print("FRIIIIES!")
+            print("Food Counter \(foodCounter)")
+            self.foodCounter+=1
+            self.highscore+=1
+            fries.removeFromParent()
+            scoreLabel.text = "Highscore is: \(highscore)"
+        }
     }
 }
+
 
 extension GameScene : SKPhysicsContactDelegate {
     func didBegin(_ contact: SKPhysicsContact) {
         var firstBody: SKPhysicsBody
         var secondBody: SKPhysicsBody
-        var thirdBody: SKPhysicsBody
         
         if contact.bodyA.categoryBitMask < contact.bodyB.categoryBitMask {
             firstBody = contact.bodyA
